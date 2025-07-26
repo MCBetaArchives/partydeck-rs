@@ -48,14 +48,11 @@ impl PartyApp {
                     true => format!("v{} (Update Available)", env!("CARGO_PKG_VERSION")),
                     false => format!("v{}", env!("CARGO_PKG_VERSION")),
                 };
-                ui.hyperlink_to(
-                    version_label,
-                    "https://github.com/wunnr/partydeck-rs/releases",
-                );
+                ui.hyperlink_to(version_label, "https://github.com/wunnr/partydeck/releases");
                 ui.add(egui::Separator::default().vertical());
                 ui.hyperlink_to(
                     "Open Source Licenses",
-                    "https://github.com/wunnr/partydeck-rs/tree/main?tab=License-2-ov-file",
+                    "https://github.com/wunnr/partydeck/tree/main?tab=License-2-ov-file",
                 );
             });
         });
@@ -98,8 +95,8 @@ impl PartyApp {
                 match self.cur_page {
                     MenuPage::Game => {
                         match cur_game!(self){
-                            Game::Executable { path, .. } =>
-                                self.infotext = format!("{}", path.display()),
+                            Game::ExecRef(e) =>
+                                self.infotext = format!("{}", e.path().display()),
                             Game::HandlerRef(h) =>
                                 self.infotext = h.info.to_owned(),
                         }

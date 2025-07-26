@@ -20,12 +20,16 @@ impl PartyApp {
         ui.heading("Welcome to PartyDeck");
         ui.separator();
         ui.label("Press SELECT/BACK or Tab to unlock gamepad navigation.");
+        ui.hyperlink_to(
+            "Download game handlers here",
+            "https://drive.proton.me/urls/D9HBKM18YR#zG8XC8yVy9WL",
+        );
         ui.label("PartyDeck is in the very early stages of development; as such, you will likely encounter bugs, issues, and strange design decisions.");
         ui.label("For debugging purposes, it's recommended to read terminal output (stdout) for further information on errors.");
         ui.label("If you have found this software useful, consider donating to support further development!");
         ui.hyperlink_to("Ko-fi", "https://ko-fi.com/wunner");
         ui.label("If you've encountered issues or want to suggest improvements, criticism and feedback are always appreciated!");
-        ui.hyperlink_to("GitHub", "https://github.com/wunnr/partydeck-rs");
+        ui.hyperlink_to("GitHub", "https://github.com/wunnr/partydeck");
     }
 
     pub fn display_page_settings(&mut self, ui: &mut Ui) {
@@ -349,23 +353,6 @@ impl PartyApp {
         });
 
         ui.separator();
-        ui.horizontal(|ui| {
-            ui.label("Update/Redownload Dependencies");
-            if ui.button("Goldberg Steam Emu").clicked() {
-                self.spawn_task("Updating Goldberg Steam Emu...", || {
-                    if let Err(err) = update_goldberg_emu() {
-                        msg("Error", &format!("Couldn't update: {}", err));
-                    }
-                });
-            }
-            if ui.button("UMU Launcher").clicked() {
-                self.spawn_task("Updating UMU Launcher...", || {
-                    if let Err(err) = update_umu_launcher() {
-                        msg("Error", &format!("Couldn't update: {}", err));
-                    }
-                });
-            }
-        });
 
         ui.horizontal(|ui| {
         if ui.button("Erase Proton Prefix").clicked() {

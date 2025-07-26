@@ -4,7 +4,7 @@ use crate::app::PartyConfig;
 use crate::game::Game;
 use crate::handler::*;
 use crate::input::*;
-use crate::launch::Game::{Executable, HandlerRef};
+use crate::launch::Game::{ExecRef, HandlerRef};
 use crate::paths::*;
 use crate::util::*;
 
@@ -61,12 +61,17 @@ pub fn launch_cmd(
     let localshare = PATH_LOCAL_SHARE.display();
     let party = PATH_PARTY.display();
     let steam = PATH_STEAM.display();
-    let res = PATH_RES.display();
 
     let mut gsc_lowres_warn = true;
 
     let gamedir = match game {
-        Executable { .. } => "",
+        ExecRef(e) => &format!(
+            "{}",
+            e.path()
+                .parent()
+                .ok_or_else(|| "Invalid path")?
+                .to_string_lossy()
+        ),
         HandlerRef(h) => match h.symlink_dir {
             true => &format!("{party}/gamesyms/{}", h.uid),
             false => &get_rootpath_handler(&h)?,
@@ -74,7 +79,7 @@ pub fn launch_cmd(
     };
 
     let win = match game {
-        Executable { path, .. } => path.extension().unwrap_or_default() == "exe",
+        ExecRef(e) => e.path().extension().unwrap_or_default() == "exe",
         HandlerRef(h) => h.win,
     };
 
@@ -118,7 +123,8 @@ pub fn launch_cmd(
     cmd.push_str("; ");
 
     let runtime = match win {
-        true => &format!("{res}/umu-run"),
+        // UMU CHANGE
+        true => &format!("{}", BIN_UMU_RUN.to_string_lossy()),
         false => {
             if let HandlerRef(h) = game {
                 match h.runtime.as_str() {
@@ -135,7 +141,7 @@ pub fn launch_cmd(
     };
 
     let exec = match game {
-        Executable { path, .. } => &path.to_string_lossy(),
+        ExecRef(e) => &e.filename(),
         HandlerRef(h) => h.exec.as_str(),
     };
 
@@ -165,7 +171,7 @@ pub fn launch_cmd(
     for (i, instance) in instances.iter().enumerate() {
         let path_prof = &format!("{party}/profiles/{}", instance.profname.as_str());
         let path_save = match game {
-            Executable { .. } => "",
+            ExecRef(_) => "",
             HandlerRef(h) => &format!("{path_prof}/saves/{}", h.uid.as_str()),
         };
 
@@ -186,7 +192,7 @@ pub fn launch_cmd(
         };
 
         let gamescope = match cfg.kbm_support {
-            true => &format!("{res}/gamescope"),
+            true => &format!("{}", BIN_GSC_KBM.to_string_lossy()),
             false => "gamescope",
         };
 
@@ -238,10 +244,8 @@ pub fn launch_cmd(
 
         // Bind player profile directories to the game's directories
         let mut binds = String::new();
-        let mut args = String::new();
 
         // Mask out any gamepads that aren't this player's
-        // Disable for now
         for (d, dev) in input_devices.iter().enumerate() {
             if !dev.enabled
                 || (!instance.devices.contains(&d) && dev.device_type == DeviceType::Gamepad)
@@ -285,8 +289,10 @@ pub fn launch_cmd(
                     "--bind \"{path_save}/{subdir}\" \"{gamedir}/{subdir}\" "
                 ));
             }
+        }
 
-            args = h
+        let args = match game {
+            HandlerRef(h) => h
                 .args
                 .iter()
                 .map(|arg| match arg.as_str() {
@@ -297,10 +303,11 @@ pub fn launch_cmd(
                     "$WIDTHXHEIGHT" => format!(" \"{gsc_width}x{gsc_height}\""),
                     _ => format!(" {arg}"),
                 })
-                .collect::<String>();
-        }
+                .collect::<String>(),
+            ExecRef(e) => e.args.clone().sanitize_path(),
+        };
 
-        cmd.push_str(&format!("{binds} {runtime} \"{gamedir}/{exec}\"{args} "));
+        cmd.push_str(&format!("{binds} {runtime} \"{gamedir}/{exec}\" {args} "));
 
         if i < instances.len() - 1 {
             // Proton games need a ~5 second buffer in-between launches

@@ -3296,8 +3296,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "partydeck-rs"
-version = "0.5.2"
+name = "partydeck"
+version = "0.6.0"
 dependencies = [
  "compress-tools",
  "dialog",
